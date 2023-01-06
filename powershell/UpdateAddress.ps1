@@ -46,9 +46,9 @@ if ([string]::IsNullOrEmpty($addresses)) {
 
 $vmNetAdapters = Get-VMNetworkAdapter -VMName $vm.Name
 
-if ($vmNetAdapters.Length -ne 2) {
-    Throw "This vm does not have the mandatory switch, Bridge and Default Switch !"
-}
+# if ($vmNetAdapters.Length -ne 2) {
+#     Throw "This vm does not have the mandatory switch, Bridge and Default Switch !"
+# }
 
 # Get internal default switch (use for connectivity inside vm)
 # $defaultAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Default Switch"}

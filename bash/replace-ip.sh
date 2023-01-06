@@ -11,4 +11,4 @@ newVmIp=${args[3]}
 sudo -S sed -i "s/${oldHostIp}/${newHostIp}/g" /etc/fstab
 echo "  -  [vm:fstab] at /etc/fstab"
 sudo -S sed -i "s/${oldHostIp}/${newHostIp}/g" /etc/hosts
-echo "  - [vm:hosts] at /etc/hosts"
+echo "  -  [vm:hosts] at /etc/hosts"
