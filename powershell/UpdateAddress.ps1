@@ -51,10 +51,10 @@ if ($vmNetAdapters.Length -ne 2) {
 }
 
 # Get internal default switch (use for connectivity inside vm)
-$defaultAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Default Switch"}
-if ($null -eq $defaultAdapter) {
-    Throw "This vm does not have 'Default Switch' in his adapter"
-}
+# $defaultAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Default Switch"}
+# if ($null -eq $defaultAdapter) {
+    # Throw "This vm does not have 'Default Switch' in his adapter"
+# }
 
 # Get external bridge switch (use for windows share)
 $bridgeAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Bridge"}
@@ -67,7 +67,7 @@ $oldVmIp = $addresses.vm
 $oldHostIp = $addresses.host
 
 # new ip, use for the replacement
-$newVmIp = $defaultAdapter.IPAddresses[0]
+$newVmIp = $bridgeAdapter.IPAddresses[0]
 $newHostIp = GetSwtichHostIp -Name $bridgeAdapter.SwitchName
 
 
