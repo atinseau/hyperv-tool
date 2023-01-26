@@ -63,10 +63,11 @@ curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -SE bash -
 sudo -S apt install -y nodejs
 sudo -S npm install -g yarn
 
+echo "installed" > $HOME/.installed
 
 chmod +x $HOME/ogf-proxy.sh
 $HOME/ogf-proxy.sh
 
-echo "installed" > $HOME/.installed
+
 
 
