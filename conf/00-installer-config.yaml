@@ -4,8 +4,8 @@ network:
     eth0:
       dhcp4: no
       addresses:
-          - 10.30.110.208/29
-      gateway4: 10.52.22.1
+          - <IP>/29
+      gateway4: 10.30.22.7
       nameservers:
           addresses: [10.51.1.10, 10.52.22.5]
     eth1:

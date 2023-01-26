@@ -6,6 +6,14 @@ if [ -f "$HOME/.installed" ]; then
     exit 0
 fi
 
+# MOVING CONF FILES
+sed -i "s/<IP>/$VM_IP/g" /tmp/00-installer-config.yaml
+sudo -S mv /tmp/00-installer-config.yaml /etc/netplan/00-installer-config.yaml
+
+sed -i "s/<USER>/$WINDOWS_USERNAME/g" /tmp/ogf-proxy.sh
+sed -i "s/<PASSWORD>/$WINDOWS_PASSWORD/g" /tmp/ogf-proxy.sh
+mv /tmp/ogf-proxy.sh /home/$USER/ogf-proxy.sh
+
 sudo -S apt update -y && sudo -S apt upgrade -y
 
 # GLOBAL PACKAGES
@@ -63,8 +71,9 @@ sudo -S apt install -y nodejs
 sudo -S npm install -g yarn
 
 
-echo "installed" > $HOME/.installed
+chmod +x $HOME/ogf-proxy.sh
+$HOME/ogf-proxy.sh
 
-sudo reboot
+echo "installed" > $HOME/.installed
 
 

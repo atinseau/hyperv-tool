@@ -1,6 +1,6 @@
 proxy_address=prdproxyserv.groupe.lan:3128
-proxy_user=
-proxy_password=
+proxy_user=<USER>
+proxy_password=<PASSWORD>
 
 echo -e " \e[32m Configuring transparent proxy for docker container \e[0m"
 docker rm -f OGF-proxy-connector || true
