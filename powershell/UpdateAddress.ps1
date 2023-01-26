@@ -46,15 +46,15 @@ if ([string]::IsNullOrEmpty($addresses)) {
 
 $vmNetAdapters = Get-VMNetworkAdapter -VMName $vm.Name
 
-# if ($vmNetAdapters.Length -ne 2) {
-#     Throw "This vm does not have the mandatory switch, Bridge and Default Switch !"
-# }
+if ($vmNetAdapters.Length -ne 2) {
+    Throw "This vm does not have the mandatory switch, Bridge and Default Switch !"
+}
 
-# Get internal default switch (use for connectivity inside vm)
-# $defaultAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Default Switch"}
-# if ($null -eq $defaultAdapter) {
-    # Throw "This vm does not have 'Default Switch' in his adapter"
-# }
+#Get internal default switch (use for connectivity inside vm)
+$defaultAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Default Switch"}
+if ($null -eq $defaultAdapter) {
+    Throw "This vm does not have 'Default Switch' in his adapter"
+}
 
 # Get external bridge switch (use for windows share)
 $bridgeAdapter = $vmNetAdapters | Where-Object -FilterScript {$_.SwitchName -eq "Bridge"}
@@ -62,22 +62,24 @@ if ($null -eq $bridgeAdapter) {
     Throw "This vm does not have 'Bridge' in his adapter"
 }
 
-#old ip
-$oldVmIp = $addresses.vm
-$oldHostIp = $addresses.host
+$currentVmAddresses = $addresses | Select-Object -ExpandProperty $vmName
+
+# #old ip
+$oldVmIp = $currentVmAddresses.vm
+$oldHostIp = $currentVmAddresses.host
 
 # new ip, use for the replacement
-$newVmIp = $bridgeAdapter.IPAddresses[0]
+$newVmIp = $defaultAdapter.IPAddresses[0]
 $newHostIp = GetSwtichHostIp -Name $bridgeAdapter.SwitchName
 
 
-if ($addresses.vm -eq $newVmIp -and $addresses.host -eq $newHostIp) {
-    Write-Host "No ip change detected !"
-    exit
-}
+# if ($oldVmIp -eq $newVmIp -and $oldHostIp -eq $newHostIp) {
+#     Write-Host "No ip change detected !"
+#     exit
+# }
 
-Write-Host "VM ip:" $addresses.vm " => " $newVmIp
-Write-Host "Windows ip:" $addresses.host " => " $newHostIp
+Write-Host "VM ip:" $oldVmIp " => " $newVmIp
+Write-Host "Windows ip:" $oldHostIp " => " $newHostIp
 
 
 Write-Host "Starting replacing..."
@@ -85,14 +87,14 @@ Write-Host "Starting replacing..."
 # Update hosts in windows
 Write-Host "  -  [windows:hosts] at $hostFile"
 $hostContent = Get-Content $hostFile
-$hostContent = $hostContent -replace $addresses.vm, $newVmIp
+$hostContent = $hostContent -replace $oldVmIp, $newVmIp
 $hostContent | Set-Content $hostFile
 
 # Update ssh config in windows
 if (Test-Path $sshConfigFile -PathType leaf) {
     Write-Host "  -  [windows:config] at $sshConfigFile"
     $sshConfigContent = Get-Content $sshConfigFile
-    $sshConfigContent = $sshConfigContent -replace $addresses.vm, $newVmIp
+    $sshConfigContent = $sshConfigContent -replace $oldVmIp, $newVmIp
     $sshConfigContent | Set-Content $sshConfigFile
 }
 
@@ -109,10 +111,10 @@ if ([string]::IsNullOrEmpty($authorizedKeys) -or (Get-Content $env:USERPROFILE\.
 Get-Content $replaceIpScript | ssh $username@$newVmIp "cat > /tmp/replace-ip.sh; dos2unix /tmp/replace-ip.sh; chmod +x /tmp/replace-ip.sh;"
 ssh $username@$newVmIp "/tmp/replace-ip.sh ${oldHostIp} ${newHostIp} ${oldVmIp} ${newVmIp}"
 
-Write-Host "Updating addresses file..."
+# Write-Host "Updating addresses file..."
 
-$addresses.host = $newHostIp
-$addresses.vm = $newVmIp
-$addresses | ConvertTo-Json | Set-Content $addressesFile
+# $addresses.host = $newHostIp
+# $addresses.vm = $newVmIp
+# $addresses | ConvertTo-Json | Set-Content $addressesFile
 
-Write-Host "Done !"
+# Write-Host "Done !"

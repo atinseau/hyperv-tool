@@ -59,7 +59,7 @@ fi
 # NVM INSTALL
 
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -SE bash -
-sudo -S apt install -y nodejs npm
+sudo -S apt install -y nodejs
 sudo -S npm install -g yarn
 
 
