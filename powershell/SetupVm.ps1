@@ -36,12 +36,6 @@ if ($null -eq $vmBridge) {
 
 $windowsIp = GetSwitchHostIp $vmBridge.SwitchName
 
-CreateAddressesFile `
-    -vmName $vmBridge.VMName `
-    -vmIp $ip `
-    -windowsIp $windowsIp `
-    -addressesFile $addressesFile
-
 # Attach default switch to vm
 $vmDefault = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Default Switch" }
 if ($null -eq $vmDefault) {
@@ -69,7 +63,6 @@ $ip $alias
     Write-Output $aliasFile | Add-Content $hostsFile
     Write-Host "Alias created in hosts file"
 }
-
 
 # Setup ssh
 if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
@@ -106,6 +99,7 @@ ssh $username@$ip "export VM_IP=$ip;export WINDOWS_IP=$windowsIp; export WINDOWS
 Restart-VM -Name $vmName -Force
 
 # Waiting for vm to start and replacing Bridge ip by Default Switch ip in hosts file
+# and creating addresses file for UpdateAddresses.ps1
 $running = $true
 while ($running) {
     $vm = Get-VM -Name $vmName
@@ -127,6 +121,12 @@ while ($running) {
         $hostContent = Get-Content $hostsFile
         $hostContent = $hostContent -replace $ip, $defaultSwitchIp
         $hostContent | Set-Content $hostsFile
+
+        CreateAddressesFile `
+            -vmName $vmBridge.VMName `
+            -vmIp $defaultSwitchIp `
+            -windowsIp $windowsIp `
+            -addressesFile $addressesFile
         break
     }
     Write-Host "Waiting for ip..."

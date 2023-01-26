@@ -47,20 +47,13 @@ sudo -S usermod -aG docker $USER
 echo "Docker installed"
 
 # FSTAB
-
-echo "Configurate windows share ? (y/n)"
-read answer
-
-if [[ "$answer" == "y" ]]; then
 mkdir "$HOME/share"
 cat <<EOF > $HOME/.cifscredentials
 username=$WINDOWS_USERNAME
 password=$WINDOWS_PASSWORD
 domain=groupe.lan
 EOF
-
 echo "//$WINDOWS_IP/share $HOME/share cifs credentials=$HOME/.cifscredentials,uid=1000,gid=1000,vers=3.0,iocharset=utf8 0 0" | sudo -S tee -a /etc/fstab
-fi
 
 
 
