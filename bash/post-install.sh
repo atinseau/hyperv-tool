@@ -6,6 +6,10 @@ if [ -f "$HOME/.installed" ]; then
     exit 0
 fi
 
+# DISBALE CERTIFICATE VERIFYING
+sudo -S touch /etc/apt/apt.conf.d/99verify-peer.conf
+echo "Acquire { https::Verify-Peer false }" | sudo -S tee /etc/apt/apt.conf.d/99verify-peer.conf > /dev/null
+
 # MOVING CONF FILES
 sed -i "s/<IP>/$VM_IP/g" /tmp/00-installer-config.yaml
 sudo -S mv /tmp/00-installer-config.yaml /etc/netplan/00-installer-config.yaml
@@ -58,15 +62,16 @@ echo "//$WINDOWS_IP/share $HOME/share cifs credentials=$HOME/.cifscredentials,ui
 
 
 # NVM INSTALL
-
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -SE bash -
 sudo -S apt install -y nodejs
 sudo -S npm install -g yarn
+sudo -S npm install -g pnpm
 
 echo "installed" > $HOME/.installed
 
-chmod +x $HOME/ogf-proxy.sh
-$HOME/ogf-proxy.sh
+# FIX
+# chmod +x $HOME/ogf-proxy.sh
+# sudo -S $HOME/ogf-proxy.sh
 
 
 
