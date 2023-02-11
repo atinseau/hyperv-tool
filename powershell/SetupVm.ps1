@@ -58,6 +58,18 @@ $ogfProxyFile = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnem
 $windowsUsername = Read-Host "Enter windows username"
 $windowsPassword = Read-Host "Enter windows password"
 
+# DEPRECATED
+# $setupProxy = Read-Host "Setup proxy (only if you have the vpn enabled)? (y/n)"
+# if ($setupProxy -eq "y") {
+#     $proxyFile = @"
+# Acquire::http::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
+# Acquire::https::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
+# "@
+#     Write-Output $proxyFile | ssh $username@$ip "cat > proxy.conf"
+#     ssh $username@$ip "sudo -S mv proxy.conf /etc/apt/apt.conf.d/proxy.conf"
+# }
+
+
 ssh $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt upgrade -y; sudo -S apt install -y dos2unix"
 
 Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
