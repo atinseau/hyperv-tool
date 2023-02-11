@@ -2,32 +2,13 @@
 . "$PSScriptRoot\utils\Function.ps1" 
 
 # global variables
-$addressesFile = "$env:USERPROFILE\.addresses.json"
 $sshKeyFile = "$env:USERPROFILE\.ssh\id_rsa.pub"
 $hostsFile = "C:\Windows\System32\drivers\etc\hosts"
 
-# Setup variables
-$vmName = Read-Host "Enter Vm name"
-if ($null -eq $vmName) {
-    Write-Error "No vm name provided"
-    exit
-}
-
-$username = Read-Host "Enter Vm username"
-if ($null -eq $username) {
-    Write-Error "No username provided"
-    exit
-}
+# Get vm info and credentials
+$vmName, $vmUsername, $vmIp, $vm = VmPrompt
 
 
-$ip = Read-Host "Enter Vm IP"
-if ($null -eq $ip) {
-    Write-Error "No ip provided"
-    exit
-}
-
-# Setup addresses file
-$vm = Get-VM -Name $vmName
 $vmBridge = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Bridge" }
 if ($null -eq $vmBridge) {
     Write-Error "No VM with bridge network adapter found"
@@ -58,7 +39,7 @@ if ($createAlias -eq "y") {
         exit
     }
     $aliasFile = @"
-$ip $alias
+$vmIp $alias
 "@
     Write-Output $aliasFile | Add-Content $hostsFile
     Write-Host "Alias created in hosts file"
@@ -68,7 +49,7 @@ $ip $alias
 if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
     ssh-keygen
 }
-Get-Content $sshKeyFile | ssh $username@$ip "cat >> .ssh/authorized_keys"
+Get-Content $sshKeyFile | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
 
 $postInstallScript = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\bash\post-install.sh"
 $netplanConfig = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\conf\00-installer-config.yaml"
@@ -77,24 +58,13 @@ $ogfProxyFile = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnem
 $windowsUsername = Read-Host "Enter windows username"
 $windowsPassword = Read-Host "Enter windows password"
 
-# DEPRECATED
-# $setupProxy = Read-Host "Setup proxy (only if you have the vpn enabled)? (y/n)"
-# if ($setupProxy -eq "y") {
-#     $proxyFile = @"
-# Acquire::http::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-# Acquire::https::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-# "@
-#     Write-Output $proxyFile | ssh $username@$ip "cat > proxy.conf"
-#     ssh $username@$ip "sudo -S mv proxy.conf /etc/apt/apt.conf.d/proxy.conf"
-# }
+ssh $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt upgrade -y; sudo -S apt install -y dos2unix"
 
-ssh $username@$ip "sudo -S apt update -y; sudo -S apt upgrade -y; sudo -S apt install -y dos2unix"
+Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
+Get-Content $netplanConfig | ssh $vmUsername@$vmIp 'cat > /tmp/00-installer-config.yaml && dos2unix /tmp/00-installer-config.yaml'
+Get-Content $ogfProxyFile | ssh $vmUsername@$vmIp 'cat > /tmp/ogf-proxy.sh && dos2unix /tmp/ogf-proxy.sh'
 
-Get-Content $postInstallScript | ssh $username@$ip 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
-Get-Content $netplanConfig | ssh $username@$ip 'cat > /tmp/00-installer-config.yaml && dos2unix /tmp/00-installer-config.yaml'
-Get-Content $ogfProxyFile | ssh $username@$ip 'cat > /tmp/ogf-proxy.sh && dos2unix /tmp/ogf-proxy.sh'
-
-ssh $username@$ip "export VM_IP=$ip;export WINDOWS_IP=$windowsIp; export WINDOWS_USERNAME=$windowsUsername; export WINDOWS_PASSWORD=$windowsPassword;chmod +x /tmp/post-install.sh && /tmp/post-install.sh"
+ssh $vmUsername@$vmIp "export VM_IP=$vmIp;export WINDOWS_IP=$windowsIp; export WINDOWS_USERNAME=$windowsUsername; export WINDOWS_PASSWORD=$windowsPassword;chmod +x /tmp/post-install.sh && /tmp/post-install.sh"
 
 Restart-VM -Name $vmName -Force
 
@@ -116,10 +86,10 @@ while ($running) {
     $vm = Get-VM -Name $vmName
     $defaultSwitch = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Default Switch" }
     $defaultSwitchIp = $defaultSwitch.IPAddresses[0]
-    if ($defaultSwitchIp -ne $null) {
+    if ($null -ne $defaultSwitchIp) {
         $running = $false
         $hostContent = Get-Content $hostsFile
-        $hostContent = $hostContent -replace $ip, $defaultSwitchIp
+        $hostContent = $hostContent -replace $vmIp, $defaultSwitchIp
         $hostContent | Set-Content $hostsFile
 
         CreateAddressesFile `

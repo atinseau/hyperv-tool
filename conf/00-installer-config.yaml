@@ -2,12 +2,13 @@
 network:
   ethernets:
     eth0:
-      dhcp4: no
+      dhcp4: yes
+      dhcp4-overrides:
+         use-dns: no
       addresses:
-          - <IP>/29
-      gateway4: 10.30.22.7
+         - <IP>/21
       nameservers:
-          addresses: [10.51.1.10, 10.52.22.5]
+         addresses: [10.52.22.1,10.51.1.10,10.52.2.5]
     eth1:
       dhcp4: yes
   version: 2
