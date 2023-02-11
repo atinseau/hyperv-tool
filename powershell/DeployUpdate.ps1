@@ -8,7 +8,6 @@ param (
 . "$PSScriptRoot\utils\Function.ps1"
 
 # Global variables
-$bashDirectory = $PSScriptRoot.Replace("\powershell", "\bash")
 $updatesDirectory = $bashDirectory + "\updates"
 
 if ($Action -eq "create") {
@@ -86,7 +85,7 @@ if ($updateToPush.Count -ge 1) {
 
   # Execute update pusher
   Write-Host "Executing updates..."
-  ssh $vmUsername@$vmIp "/tmp/update-pusher.sh"
+  ssh -t $vmUsername@$vmIp "/tmp/update-pusher.sh"
 
 } else {
   Write-Host "No updates to push !"

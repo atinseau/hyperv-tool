@@ -8,6 +8,12 @@ $hostsFile = "C:\Windows\System32\drivers\etc\hosts"
 # Get vm info and credentials
 $vmName, $vmUsername, $vmIp, $vm = VmPrompt
 
+$snapshot = Get-VMSnapshot -Name 'BeforeSetupVm' -VMName test -ErrorAction SilentlyContinue
+if ($null -eq $snapshot) {
+    Checkpoint-VM -Name $vmName -SnapshotName BeforeSetupVm
+} else {
+    Write-Host "Snapshot already exists"
+}
 
 $vmBridge = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Bridge" }
 if ($null -eq $vmBridge) {
@@ -51,9 +57,10 @@ if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
 }
 Get-Content $sshKeyFile | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
 
-$postInstallScript = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\bash\post-install.sh"
-$netplanConfig = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\conf\00-installer-config.yaml"
-$ogfProxyFile = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\conf\ogf-proxy.sh"
+$postInstallScript = $bashDirectory + "\post-install.sh"
+$netplanConfig = $confDirectory + "\00-installer-config.yaml"
+$ogfProxyFile = $confDirectory + "\ogf-proxy.sh"
+
 
 $windowsUsername = Read-Host "Enter windows username"
 $windowsPassword = Read-Host "Enter windows password"
@@ -70,13 +77,13 @@ $windowsPassword = Read-Host "Enter windows password"
 # }
 
 
-ssh $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt upgrade -y; sudo -S apt install -y dos2unix"
-
+ssh $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt install -y dos2unix"
 Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
 Get-Content $netplanConfig | ssh $vmUsername@$vmIp 'cat > /tmp/00-installer-config.yaml && dos2unix /tmp/00-installer-config.yaml'
 Get-Content $ogfProxyFile | ssh $vmUsername@$vmIp 'cat > /tmp/ogf-proxy.sh && dos2unix /tmp/ogf-proxy.sh'
 
-ssh $vmUsername@$vmIp "export VM_IP=$vmIp;export WINDOWS_IP=$windowsIp; export WINDOWS_USERNAME=$windowsUsername; export WINDOWS_PASSWORD=$windowsPassword;chmod +x /tmp/post-install.sh && /tmp/post-install.sh"
+ssh -t $vmUsername@$vmIp "export VM_IP=$vmIp;export WINDOWS_IP=$windowsIp; export WINDOWS_USERNAME=$windowsUsername; export WINDOWS_PASSWORD=$windowsPassword;chmod +x /tmp/post-install.sh && /tmp/post-install.sh"
+# ssh -t $vmUsername@$vmIp "echo `"installed`" > `$HOME/.installed"
 
 Restart-VM -Name $vmName -Force
 

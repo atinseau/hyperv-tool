@@ -5,10 +5,7 @@ $vmName = Read-Host "Enter vm name"
 
 $hostFile = "C:\Windows\System32\drivers\etc\hosts"
 $sshConfigFile = "$env:USERPROFILE\.ssh\config"
-$replaceIpScript = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\bash\replace-ip.sh"
-
-
-
+$replaceIpScript = $bashDirectory + "\replace-ip.sh"
 
 
 # Start script
@@ -21,8 +18,7 @@ if ($vm.State -ne "Running") {
 }
 
 # Get old ip config (vm and host) in .addresses.json
-$oldVmIp, $oldHostIp = GetCurrentVmIpConfig
-
+$oldVmIp, $oldHostIp, $addresses = GetCurrentVmIpConfig -vmName $vmName
 
 $vmNetAdapters = Get-VMNetworkAdapter -VMName $vm.Name
 if ($vmNetAdapters.Length -ne 2) {
@@ -44,7 +40,6 @@ if ($null -eq $bridgeAdapter) {
 # new ip, use for the replacement
 $newVmIp = $defaultAdapter.IPAddresses[0]
 $newHostIp = GetSwitchHostIp -Name $bridgeAdapter.SwitchName
-
 
 if ($oldVmIp -eq $newVmIp -and $oldHostIp -eq $newHostIp) {
     Write-Host "No ip change detected !"

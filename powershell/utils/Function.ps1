@@ -1,5 +1,7 @@
 # Global variables
 $addressesFile = "$env:USERPROFILE\.addresses.json"
+$bashDirectory = $PSScriptRoot.Replace("\powershell\utils", "\bash")
+$confDirectory = $PSScriptRoot.Replace("\powershell\utils", "\conf")
 
 # Global functions
 function GetSwitchHostIp {
@@ -111,6 +113,11 @@ function FixAuthorizedKeys {
 
     # FIX SSH AUTHORIZED KEYS IN VM
     $authorizedKeys = (ssh $vmUsername@$vmIp "cat .ssh/authorized_keys 2> /dev/null")
+
+    if ($LASTEXITCODE -ne 0) {
+        Throw "Error while getting authorized_keys file, please check if ssh is working !"
+    }
+    
     if ([string]::IsNullOrEmpty($authorizedKeys) -or (Get-Content $env:USERPROFILE\.ssh\id_rsa.pub | Select-String -Pattern "$authorizedKeys" -SimpleMatch -Quiet) -ne $true) {
         Write-Host "Recreating authorized_keys file with windows ssh key !"
         Get-Content $env:USERPROFILE\.ssh\id_rsa.pub | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
@@ -197,5 +204,5 @@ function GetCurrentVmIpConfig {
     $vmIp = $currentVmAddresses.vm
     $hostIp = $currentVmAddresses.host
 
-    return $vmIp, $hostIp
+    return $vmIp, $hostIp, $addresses
 }
