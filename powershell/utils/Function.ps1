@@ -59,7 +59,6 @@ function VmPrompt {
         [Boolean] $AskForVmName = $true,
         [Boolean] $AskForVmUsername = $true,
         [Boolean] $AskForVmIp = $true,
-
         [string] $vmName = "",
         [string] $vmUsername = "",
         [string] $vmIp = ""

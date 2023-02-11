@@ -26,11 +26,7 @@ if ($Action -eq "create") {
 }
 
 $vmName, $vmUsername, $vm =  VmPrompt `
-    -AskForVmIp $false `
-    -AskForVmName $false `
-    -AskForVmUsername $false `
-    -vmName "Ogf-ubuntu" `
-    -vmUsername "arthur"
+    -AskForVmIp $false
 
 if ($vmUsername -eq "root") {
   Write-Error "You can't use root user !"

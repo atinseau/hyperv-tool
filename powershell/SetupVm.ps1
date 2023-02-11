@@ -32,7 +32,6 @@ if ($null -eq $vmDefault) {
 }
 
 # Create alias in hosts file
-
 $createAlias = Read-Host "Create alias in hosts file? (y/n)"
 if ($createAlias -eq "y") {
     $alias = Read-Host "Enter alias for $vmName"
@@ -58,32 +57,22 @@ if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
 Get-Content $sshKeyFile | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
 
 $postInstallScript = $bashDirectory + "\post-install.sh"
-$netplanConfig = $confDirectory + "\00-installer-config.yaml"
+$workspaceConfig = $confDirectory + "\workspace_config.yaml"
+$noWifiConfig = $confDirectory + "\no_wifi_config.yaml"
 $ogfProxyFile = $confDirectory + "\ogf-proxy.sh"
 
 
 $windowsUsername = Read-Host "Enter windows username"
 $windowsPassword = Read-Host "Enter windows password"
 
-# DEPRECATED
-# $setupProxy = Read-Host "Setup proxy (only if you have the vpn enabled)? (y/n)"
-# if ($setupProxy -eq "y") {
-#     $proxyFile = @"
-# Acquire::http::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-# Acquire::https::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-# "@
-#     Write-Output $proxyFile | ssh $username@$ip "cat > proxy.conf"
-#     ssh $username@$ip "sudo -S mv proxy.conf /etc/apt/apt.conf.d/proxy.conf"
-# }
+ssh -t $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt install -y dos2unix"
 
-
-ssh $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt install -y dos2unix"
 Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
-Get-Content $netplanConfig | ssh $vmUsername@$vmIp 'cat > /tmp/00-installer-config.yaml && dos2unix /tmp/00-installer-config.yaml'
+Get-Content $workspaceConfig | ssh $vmUsername@$vmIp 'cat > /tmp/workspace_config.yaml && dos2unix /tmp/workspace_config.yaml'
+Get-Content $noWifiConfig | ssh $vmUsername@$vmIp 'cat > /tmp/no_wifi_config.yaml && dos2unix /tmp/no_wifi_config.yaml'
 Get-Content $ogfProxyFile | ssh $vmUsername@$vmIp 'cat > /tmp/ogf-proxy.sh && dos2unix /tmp/ogf-proxy.sh'
 
-ssh -t $vmUsername@$vmIp "export VM_IP=$vmIp;export WINDOWS_IP=$windowsIp; export WINDOWS_USERNAME=$windowsUsername; export WINDOWS_PASSWORD=$windowsPassword;chmod +x /tmp/post-install.sh && /tmp/post-install.sh"
-# ssh -t $vmUsername@$vmIp "echo `"installed`" > `$HOME/.installed"
+ssh -t $vmUsername@$vmIp "chmod +x /tmp/post-install.sh && sudo -S /tmp/post-install.sh `$HOME `$USER $vmIp $windowsIp $windowsUsername $windowsPassword"
 
 Restart-VM -Name $vmName -Force
 
