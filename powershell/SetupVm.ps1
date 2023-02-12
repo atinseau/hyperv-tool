@@ -8,7 +8,7 @@ $hostsFile = "C:\Windows\System32\drivers\etc\hosts"
 # Get vm info and credentials
 $vmName, $vmUsername, $vmIp, $vm = VmPrompt
 
-$snapshot = Get-VMSnapshot -Name 'BeforeSetupVm' -VMName test -ErrorAction SilentlyContinue
+$snapshot = Get-VMSnapshot -Name 'BeforeSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
 if ($null -eq $snapshot) {
     Checkpoint-VM -Name $vmName -SnapshotName BeforeSetupVm
 } else {
@@ -117,5 +117,12 @@ while ($running) {
     Write-Host "Waiting for ip..."
     Start-Sleep -Seconds 1
 }
+
+
+$snapshot = Get-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
+if ($null -ne $snapshot) {
+    Remove-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -Confirm:$false
+}
+Checkpoint-VM -Name $vmName -SnapshotName AfterSetupVm
 
 Write-Host "Done !"
