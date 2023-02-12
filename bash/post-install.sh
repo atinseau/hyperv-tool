@@ -82,6 +82,7 @@ function install_netplan() {
   echo "Installing netplan config..."
   # sed -i "s/<IP>/$VM_IP/g" /tmp/workspace_config.yaml
   # mv /tmp/workspace_config.yaml /etc/netplan/workspace_config.yaml
+  rm /etc/netplan/00-installer-config.yaml
   mv /tmp/no_wifi_config.yaml /etc/netplan/00-installer-config.yaml
 }
 
@@ -94,10 +95,13 @@ install_nvm
 install_cifs
 install_proxy
 install_docker
-install_hyperv
 install_netplan
 
 
 touch $USER_HOME/.installed
 chown $SSH_USER:$SSH_USER $USER_HOME/.installed
 echo "Ready to go!"
+
+
+# preventing stdout interference
+install_hyperv
