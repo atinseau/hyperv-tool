@@ -2,6 +2,8 @@
 
 USER_HOME=$1
 SSH_USER=$2
+VM_IP=$3
+HOST_IP=$4
 
 if ! apt list --installed 2> /dev/null | grep jq > /dev/null; then
   echo "Installing jq..."
@@ -10,7 +12,7 @@ fi
 
 for f in /tmp/updates/*.sh; do
   echo "Processing $f"
-  bash $f $USER_HOME $SSH_USER
+  bash $f $USER_HOME $SSH_USER $VM_IP $HOST_IP
   exit_code=$?
   bool="true"
   if [ $exit_code -ne 0 ]; then
