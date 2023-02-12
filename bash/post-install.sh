@@ -68,6 +68,7 @@ username=$WINDOWS_USERNAME
 password=$WINDOWS_PASSWORD
 domain=groupe.lan
 EOF
+  chown $SSH_USER:$SSH_USER $USER_HOME/.cifscredentials
   echo "//$WINDOWS_IP/share $USER_HOME/share cifs credentials=$USER_HOME/.cifscredentials,uid=1000,gid=1000,vers=3.0,iocharset=utf8 0 0" | tee -a /etc/fstab
 }
 
@@ -76,6 +77,10 @@ function install_proxy () {
   sed -i "s/<USER>/$WINDOWS_USERNAME/g" /tmp/ogf-proxy.sh
   sed -i "s/<PASSWORD>/$WINDOWS_PASSWORD/g" /tmp/ogf-proxy.sh
   mv /tmp/ogf-proxy.sh $USER_HOME/ogf-proxy.sh
+
+  touch /etc/apt/apt.conf.d/99verify-peer.conf
+  echo "Acquire { https::Verify-Peer false }" | tee /etc/apt/apt.conf.d/99verify-peer.conf > /dev/null
+  # mv /tmp/proxy.conf /etc/apt/apt.conf.d/proxy.conf
 }
 
 function install_netplan() {

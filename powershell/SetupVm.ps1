@@ -67,6 +67,13 @@ $windowsPassword = Read-Host "Enter windows password"
 
 ssh -t $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt install -y dos2unix"
 
+# DEPRECATED
+$proxyFile = @"
+Acquire::http::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
+Acquire::https::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
+"@
+Write-Output $proxyFile | ssh $vmUsername@$vmIp "cat > /tmp/proxy.conf && dos2unix /tmp/proxy.conf"
+
 Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
 Get-Content $workspaceConfig | ssh $vmUsername@$vmIp 'cat > /tmp/workspace_config.yaml && dos2unix /tmp/workspace_config.yaml'
 Get-Content $noWifiConfig | ssh $vmUsername@$vmIp 'cat > /tmp/no_wifi_config.yaml && dos2unix /tmp/no_wifi_config.yaml'

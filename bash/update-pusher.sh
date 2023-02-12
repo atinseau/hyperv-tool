@@ -1,24 +1,34 @@
 #!/bin/bash
 
+USER_HOME=$1
+SSH_USER=$2
+
 if ! apt list --installed 2> /dev/null | grep jq > /dev/null; then
-  echo "jq is not installed"
-  sudo -S apt install -y jq
+  echo "Installing jq..."
+  apt install -y jq > /dev/null
 fi
 
 for f in /tmp/updates/*.sh; do
   echo "Processing $f"
-  bash $f
+  bash $f $USER_HOME $SSH_USER
+  exit_code=$?
+  bool="true"
+  if [ $exit_code -ne 0 ]; then
+    bool="false"
+  fi
+
   IN="$f"
   arrIN=(${IN//-/ })
   id=$(echo ${arrIN[0]} | sed 's/\/tmp\/updates\///g')
 
-  bool="true"
-  if [ $? -ne 0 ]; then
-    bool="false"
-  fi
-  cat $HOME/.installed | jq ". += {\"$id\": $bool}" > $HOME/.installed.tmp
-  mv $HOME/.installed.tmp $HOME/.installed
+  cat $USER_HOME/.installed | jq ". += {\"$id\": $bool}" > $USER_HOME/.installed.tmp
+  mv $USER_HOME/.installed.tmp $USER_HOME/.installed
+  chown $SSH_USER:$SSH_USER $USER_HOME/.installed
 
+  if [ "$bool" = "false" ]; then
+    echo "Error while processing $f"
+    exit 1
+  fi
 done
 
 rm -rf /tmp/updates
