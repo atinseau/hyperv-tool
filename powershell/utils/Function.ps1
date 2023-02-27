@@ -107,13 +107,14 @@ function FixAuthorizedKeys {
         [Parameter(Mandatory = $true)]
         [string] $vmUsername,
         [Parameter(Mandatory = $true)]
-        [string] $vmIp
+        [string] $vmIp,
+        [Boolean] $Throwable = $true
     )
 
     # FIX SSH AUTHORIZED KEYS IN VM
     $authorizedKeys = (ssh $vmUsername@$vmIp "cat .ssh/authorized_keys 2> /dev/null")
 
-    if ($LASTEXITCODE -ne 0) {
+    if ($Throwable -eq $true -and $LASTEXITCODE -ne 0) {
         Throw "Error while getting authorized_keys file, please check if ssh is working !"
     }
     

@@ -71,7 +71,8 @@ $username = Read-Host "Enter vm username"
 # FIX SSH AUTHORIZED KEYS IN VM
 FixAuthorizedKeys `
     -vmUsername $username `
-    -vmIp $newVmIp
+    -vmIp $newVmIp `
+    -Throwable $false
 
 # Start update ip script in vm
 Get-Content $replaceIpScript | ssh $username@$newVmIp "cat > /tmp/replace-ip.sh; dos2unix /tmp/replace-ip.sh; chmod +x /tmp/replace-ip.sh;"
