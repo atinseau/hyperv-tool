@@ -87,20 +87,20 @@ $updates | ForEach-Object {
   }
 }
 
-Write-Host "You will install this updates:"
-Write-Host "" # line break
-Write-Host ($updateToPush | Format-Table | Out-String).Trim()
-Write-Host "" # line break
-Write-Host "You can ignore some packages by using the -Ignore <hash(,)>"
-Write-Host "You can only install some packages by using the -Only <hash>"
-$confirm = Read-Host "Do you want to continue ? (y/n)"
-
-if ($confirm -ne "y") {
-  Write-Host "Aborting..."
-  exit
-}
-
 if ($updateToPush.Count -ge 1) {
+  Write-Host "You will install this updates:"
+  Write-Host "" # line break
+  Write-Host ($updateToPush | Format-Table | Out-String).Trim()
+  Write-Host "" # line break
+  Write-Host "You can ignore some packages by using the -Ignore <hash(,)>"
+  Write-Host "You can only install some packages by using the -Only <hash>"
+  $confirm = Read-Host "Do you want to continue ? (y/n)"
+
+  if ($confirm -ne "y") {
+    Write-Host "Aborting..."
+    exit
+  }
+
   Write-Host "Updates to push: $($updateToPush.Count)"
   ssh $vmUsername@$vmIp "rm -rf /tmp/updates; mkdir -p /tmp/updates"
   Get-Content ($bashDirectory + "\" + "update-pusher.sh") | ssh $vmUsername@$vmIp "cat > /tmp/update-pusher.sh; dos2unix -q /tmp/update-pusher.sh; chmod +x /tmp/update-pusher.sh;"
