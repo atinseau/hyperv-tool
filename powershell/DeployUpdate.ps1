@@ -1,7 +1,9 @@
 param (
   [string] $Action = "deploy",
   [string] $UpdateName,
-  [string] $UpdateId
+  [string] $UpdateId,
+  [string] $Ignore = $null,
+  [string] $Only = $null
 )
 
 # Import utils
@@ -59,10 +61,22 @@ $updates = Get-ChildItem -Path $updatesDirectory  -Filter "*.sh" -Recurse
 
 $updates | ForEach-Object {
   $id = $_.Name -split "-" | Select-Object -First 1
+  
+  if ($null -ne $Ignore) {
+    $ignoredIds = $Ignore -split ","
+    if ($ignoredIds -contains $id) {
+      Write-Host "Ignoring update $id"
+      return
+    }
+  }
+
+  if ($null -ne $Only -and $Only -ne $id) {
+    Write-Host "Skipping update $id"
+    return
+  }
 
   # find id in registry
   $alreadyInstalled = $updateRegistry | Select-Object -ExpandProperty $id -ErrorAction SilentlyContinue
-
   if ($null -eq $alreadyInstalled -or $alreadyInstalled -eq $false) {
     $updateToPush += $_
   }
@@ -78,6 +92,9 @@ if ($updateToPush.Count -ge 1) {
     Write-Host "Transferring update $($_.Name) to vm..."
     Get-Content $updatePath | ssh $vmUsername@$vmIp "cat > /tmp/updates/$($_.Name); dos2unix -q /tmp/updates/$($_.Name); chmod +x /tmp/updates/$($_.Name);"
   }
+
+  # Create snapshot before update vm
+  Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
 
   # Execute update pusher
   Write-Host "Executing updates..."

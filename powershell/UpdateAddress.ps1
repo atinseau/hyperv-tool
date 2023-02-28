@@ -55,6 +55,10 @@ Write-Host "Starting replacing..."
 # Update hosts in windows
 Write-Host "  -  [windows:hosts] at $hostFile"
 $hostContent = Get-Content $hostFile
+
+# Create backup
+$hostContent | Set-Content $env:USERPROFILE\hosts.bak
+
 $hostContent = $hostContent -replace $oldVmIp, $newVmIp
 $hostContent | Set-Content $hostFile
 

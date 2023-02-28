@@ -104,6 +104,10 @@ while ($running) {
     if ($null -ne $defaultSwitchIp) {
         $running = $false
         $hostContent = Get-Content $hostsFile
+
+        # Backup hosts file
+        $hostContent | Set-Content $env:USERPROFILE\hosts.bak
+
         $hostContent = $hostContent -replace $vmIp, $defaultSwitchIp
         $hostContent | Set-Content $hostsFile
 
