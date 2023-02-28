@@ -89,6 +89,19 @@ $updates | ForEach-Object {
   }
 }
 
+Write-Host "You will install this updates:"
+Write-Host "" # line break
+Write-Host ($updateToPush | Format-Table | Out-String).Trim()
+Write-Host "" # line break
+Write-Host "You can ignore some packages by using the -Ignore <hash(,)>"
+Write-Host "You can only install some packages by using the -Only <hash>"
+$confirm = Read-Host "Do you want to continue ? (y/n)"
+
+if ($confirm -ne "y") {
+  Write-Host "Aborting..."
+  exit
+}
+
 if ($updateToPush.Count -ge 1) {
   Write-Host "Updates to push: $($updateToPush.Count)"
   ssh $vmUsername@$vmIp "rm -rf /tmp/updates; mkdir -p /tmp/updates"
@@ -97,7 +110,7 @@ if ($updateToPush.Count -ge 1) {
 
   $updateToPush | Sort-Object -Property Hash | ForEach-Object {
     $updatePath = $updatesDirectory + "\" + $_.Path
-    Write-Host "Transferring update $($_.Path) to vm..."
+    Write-Host "Transferring update $($_.Hash) from $($_.Path) to vm..."
     Get-Content $updatePath | ssh $vmUsername@$vmIp "cat > /tmp/updates/$($_.Path); dos2unix -q /tmp/updates/$($_.Path); chmod +x /tmp/updates/$($_.Path);"
   }
 
