@@ -10,25 +10,43 @@ if ! apt list --installed 2> /dev/null | grep jq > /dev/null; then
   apt install -y jq > /dev/null
 fi
 
-for f in /tmp/updates/*.sh; do
-  echo "Processing $f"
-  bash $f $USER_HOME $SSH_USER $VM_IP $HOST_IP
+updates=($(ls /tmp/updates/*.sh))
+
+# replace all /tmp/updates/ with nothing
+updates=(${updates[@]//\/tmp\/updates\//})
+# split by - 
+
+updatesJson='{ "updates": [] }'
+
+for i in "${!updates[@]}"; do
+  IN="${updates[$i]}"
+  arrIN=(${IN//-/ })
+  id=$(echo ${arrIN[0]} | sed 's/\/tmp\/updates\///g')
+  updatesJson=$(echo $updatesJson | jq '.updates += [{ "hash": '"$id"', "path": '\""${updates[$i]}"\"' }]')
+done
+
+updatesJson=$(echo $updatesJson | jq '[.updates[]] | sort_by(.hash)')
+updates=($(echo "$updatesJson" | jq -c -r '.[]'))
+
+for update in "${!updates[@]}"; do
+  updateObject=${updates[$update]}
+  path="/tmp/updates/$(echo $updateObject | jq -r '.path')"
+  id=$(echo $updateObject | jq -r '.hash')	
+
+  echo "Processing $path"
+  bash $path $USER_HOME $SSH_USER $VM_IP $HOST_IP
   exit_code=$?
   bool="true"
   if [ $exit_code -ne 0 ]; then
     bool="false"
   fi
 
-  IN="$f"
-  arrIN=(${IN//-/ })
-  id=$(echo ${arrIN[0]} | sed 's/\/tmp\/updates\///g')
-
   cat $USER_HOME/.installed | jq ". += {\"$id\": $bool}" > $USER_HOME/.installed.tmp
   mv $USER_HOME/.installed.tmp $USER_HOME/.installed
   chown $SSH_USER:$SSH_USER $USER_HOME/.installed
 
   if [ "$bool" = "false" ]; then
-    echo "Error while processing $f"
+    echo "Error while processing $path"
     exit 1
   fi
 done

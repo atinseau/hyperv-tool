@@ -54,15 +54,16 @@ if ([string]::IsNullOrEmpty($updateRegistryRaw) -or $updateRegistryRaw -eq "inst
 # Convert registry to json
 $updateRegistry =  $updateRegistryRaw | ConvertFrom-Json
 
-$updateToPush = @()
 
 # Get updates
 $updates = Get-ChildItem -Path $updatesDirectory  -Filter "*.sh" -Recurse
 
+$updateToPush = @()
+
 $updates | ForEach-Object {
   $id = $_.Name -split "-" | Select-Object -First 1
   
-  if ($null -ne $Ignore) {
+  if ([string]::IsNullOrEmpty($Ignore) -eq $false) {
     $ignoredIds = $Ignore -split ","
     if ($ignoredIds -contains $id) {
       Write-Host "Ignoring update $id"
@@ -70,7 +71,7 @@ $updates | ForEach-Object {
     }
   }
 
-  if ($null -ne $Only -and $Only -ne $id) {
+  if ([string]::IsNullOrEmpty($Only) -eq $false -and $Only -ne $id) {
     Write-Host "Skipping update $id"
     return
   }
@@ -78,7 +79,13 @@ $updates | ForEach-Object {
   # find id in registry
   $alreadyInstalled = $updateRegistry | Select-Object -ExpandProperty $id -ErrorAction SilentlyContinue
   if ($null -eq $alreadyInstalled -or $alreadyInstalled -eq $false) {
-    $updateToPush += $_
+    
+    [hashtable]$objectProperty = @{}
+    $objectProperty.Add('Hash', $id)
+    $objectProperty.Add('Path', $_)
+
+    $object = New-Object -TypeName psobject -Property $objectProperty
+    $updateToPush += $object
   }
 }
 
@@ -87,14 +94,15 @@ if ($updateToPush.Count -ge 1) {
   ssh $vmUsername@$vmIp "rm -rf /tmp/updates; mkdir -p /tmp/updates"
   Get-Content ($bashDirectory + "\" + "update-pusher.sh") | ssh $vmUsername@$vmIp "cat > /tmp/update-pusher.sh; dos2unix -q /tmp/update-pusher.sh; chmod +x /tmp/update-pusher.sh;"
   # Transfer updates to vm
-  $updateToPush | ForEach-Object {
-    $updatePath = $updatesDirectory + "\" + $_.Name
-    Write-Host "Transferring update $($_.Name) to vm..."
-    Get-Content $updatePath | ssh $vmUsername@$vmIp "cat > /tmp/updates/$($_.Name); dos2unix -q /tmp/updates/$($_.Name); chmod +x /tmp/updates/$($_.Name);"
+
+  $updateToPush | Sort-Object -Property Hash | ForEach-Object {
+    $updatePath = $updatesDirectory + "\" + $_.Path
+    Write-Host "Transferring update $($_.Path) to vm..."
+    Get-Content $updatePath | ssh $vmUsername@$vmIp "cat > /tmp/updates/$($_.Path); dos2unix -q /tmp/updates/$($_.Path); chmod +x /tmp/updates/$($_.Path);"
   }
 
   # Create snapshot before update vm
-  Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
+  # Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
 
   # Execute update pusher
   Write-Host "Executing updates..."

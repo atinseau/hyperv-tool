@@ -103,7 +103,7 @@ install_docker
 install_netplan
 
 
-touch $USER_HOME/.installed
+echo "{}" > $USER_HOME/.installed
 chown $SSH_USER:$SSH_USER $USER_HOME/.installed
 echo "Ready to go!"
 
