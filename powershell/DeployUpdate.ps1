@@ -54,10 +54,8 @@ if ([string]::IsNullOrEmpty($updateRegistryRaw) -or $updateRegistryRaw -eq "inst
 # Convert registry to json
 $updateRegistry =  $updateRegistryRaw | ConvertFrom-Json
 
-
 # Get updates
 $updates = Get-ChildItem -Path $updatesDirectory  -Filter "*.sh" -Recurse
-
 $updateToPush = @()
 
 $updates | ForEach-Object {
@@ -82,7 +80,7 @@ $updates | ForEach-Object {
     
     [hashtable]$objectProperty = @{}
     $objectProperty.Add('Hash', $id)
-    $objectProperty.Add('Path', $_)
+    $objectProperty.Add('Path', $_.Name)
 
     $object = New-Object -TypeName psobject -Property $objectProperty
     $updateToPush += $object
