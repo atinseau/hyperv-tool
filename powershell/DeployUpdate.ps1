@@ -102,11 +102,17 @@ if ($updateToPush.Count -ge 1) {
   }
 
   # Create snapshot before update vm
-  # Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
+  Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
 
   # Execute update pusher
   Write-Host "Executing updates..."
   ssh -t $vmUsername@$vmIp "sudo /tmp/update-pusher.sh `$HOME `$USER $vmIp $hostIp"
+
+  if ($LASTEXITCODE -ne 0) {
+    Remove-VMSnapshot -VMName $vmName -Name "BeforeUpdate"
+    Write-Error "Update failed !"
+  }
+
 
 } else {
   Write-Host "No updates to push !"
