@@ -11,13 +11,13 @@ param (
 
 # Global variables
 $updatesDirectory = $bashDirectory + "\updates"
+$id = Get-Date -Format "ddMMyyHHmmss"
 
 if ($Action -eq "create") {
   if ([string]::IsNullOrEmpty($UpdateName)) {
     Write-Error "You must provide a name for the update !"
     exit
   }
-  $id = Get-Date -Format "ddMMyyHHmmss"
   $fixedUpdateName = $UpdateName.Replace(" ", "_")
   $fileName = "$id-$fixedUpdateName.sh"
   $updatesPath = $updatesDirectory + "\$fileName"
@@ -102,14 +102,14 @@ if ($updateToPush.Count -ge 1) {
   }
 
   # Create snapshot before update vm
-  Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate"
+  Checkpoint-VM -Name $vmName -SnapshotName "BeforeUpdate-$id"
 
   # Execute update pusher
   Write-Host "Executing updates..."
   ssh -t $vmUsername@$vmIp "sudo /tmp/update-pusher.sh `$HOME `$USER $vmIp $hostIp"
 
   if ($LASTEXITCODE -ne 0) {
-    Remove-VMSnapshot -VMName $vmName -Name "BeforeUpdate"
+    Remove-VMSnapshot -VMName $vmName -Name "BeforeUpdate-$id"
     Write-Error "Update failed !"
   }
 
