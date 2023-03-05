@@ -1,40 +1,50 @@
 # Import utils
 . "$PSScriptRoot\utils\Function.ps1" 
 
-# global variables
-$sshKeyFile = "$env:USERPROFILE\.ssh\id_rsa.pub"
-$hostsFile = "C:\Windows\System32\drivers\etc\hosts"
 
-# Get vm info and credentials
-$vmName, $vmUsername, $vmIp, $vm = VmPrompt
-
-$snapshot = Get-VMSnapshot -Name 'BeforeSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
-if ($null -eq $snapshot) {
-    Checkpoint-VM -Name $vmName -SnapshotName BeforeSetupVm
-} else {
-    Write-Host "Snapshot already exists"
+function PreSetup {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $vmName
+    )
+    $snapshot = Get-VMSnapshot -Name 'BeforeSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
+    if ($null -eq $snapshot) {
+        Checkpoint-VM -Name $vmName -SnapshotName BeforeSetupVm
+    }
+    else {
+        Write-Host "Snapshot already exists"
+    }
 }
 
-$vmBridge = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Bridge" }
-if ($null -eq $vmBridge) {
-    Write-Error "No VM with bridge network adapter found"
-    exit
+function GetWindowsIp {
+    param (
+        [Parameter(Mandatory = $true)]
+        $vm
+    )
+    $vmBridge = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Bridge" }
+    if ($null -eq $vmBridge) {
+        Write-Error "No VM with bridge network adapter found"
+        exit
+    }
+    $windowsIp = GetSwitchHostIp $vmBridge.SwitchName
+    return $windowsIp
 }
 
-$windowsIp = GetSwitchHostIp $vmBridge.SwitchName
+function CreateAlias {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $vmName,
+        [Parameter(Mandatory = $true)]
+        [string] $vmIp
+    )
 
-# Attach default switch to vm
-$vmDefault = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Default Switch" }
-if ($null -eq $vmDefault) {
-    $vm | Add-VMNetworkAdapter -SwitchName "Default Switch"
-} else {
-    Write-Host "Default switch already attached to vm"
-}
+    $createAlias = Read-Host "Create alias in hosts file? (y/n)"
+    if ($createAlias -ne "y") {
+        Write-Host "Alias not created"
+        return
+    }
 
-# Create alias in hosts file
-$createAlias = Read-Host "Create alias in hosts file? (y/n)"
-if ($createAlias -eq "y") {
-    $alias = Read-Host "Enter alias for $vmName"
+    $alias = WhilePrompt "Enter alias for $vmName"
     if ($null -eq $alias) {
         Write-Error "No alias provided"
         exit
@@ -50,83 +60,75 @@ $vmIp $alias
     Write-Host "Alias created in hosts file"
 }
 
-# Setup ssh
-if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
-    ssh-keygen
+function SetupVm {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $vmUsername,
+        [Parameter(Mandatory = $true)]
+        [string] $vmIp,
+        [Parameter(Mandatory = $true)]
+        [string] $windowsIp
+    )
+
+    $postInstallScript = $bashDirectory + "\post-install.sh"
+    $windowsUsername = WhilePrompt -Prompt "Enter windows username"
+    $windowsPassword = WhilePrompt `
+        -Secure $true `
+        -Prompt "Enter windows password"
+
+    # Prepare vm to execute post-install.sh
+    ssh -t $vmUsername@$vmIp `
+        "su -c 'apt-get update -y && apt-get -y install sudo dos2unix && echo \`"$vmUsername  ALL=(ALL) NOPASSWD:ALL\`" >> /etc/sudoers' root;"
+    Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
+    ssh -t $vmUsername@$vmIp "chmod +x /tmp/post-install.sh && sudo -S /tmp/post-install.sh `$HOME `$USER $vmIp $windowsIp $windowsUsername $windowsPassword"
 }
-Get-Content $sshKeyFile | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
 
-$postInstallScript = $bashDirectory + "\post-install.sh"
-$workspaceConfig = $confDirectory + "\workspace_config.yaml"
-$noWifiConfig = $confDirectory + "\no_wifi_config.yaml"
-$ogfProxyFile = $confDirectory + "\ogf-proxy.sh"
-
-
-$windowsUsername = Read-Host "Enter windows username"
-$windowsPassword = Read-Host "Enter windows password"
-
-ssh -t $vmUsername@$vmIp "sudo -S apt update -y; sudo -S apt install -y dos2unix"
-
-# DEPRECATED
-$proxyFile = @"
-Acquire::http::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-Acquire::https::Proxy "http://${windowsUsername}:${windowsPassword}@prdproxyserv.groupe.lan:3128/";
-"@
-Write-Output $proxyFile | ssh $vmUsername@$vmIp "cat > /tmp/proxy.conf && dos2unix /tmp/proxy.conf"
-
-Get-Content $postInstallScript | ssh $vmUsername@$vmIp 'cat > /tmp/post-install.sh && dos2unix /tmp/post-install.sh'
-Get-Content $workspaceConfig | ssh $vmUsername@$vmIp 'cat > /tmp/workspace_config.yaml && dos2unix /tmp/workspace_config.yaml'
-Get-Content $noWifiConfig | ssh $vmUsername@$vmIp 'cat > /tmp/no_wifi_config.yaml && dos2unix /tmp/no_wifi_config.yaml'
-Get-Content $ogfProxyFile | ssh $vmUsername@$vmIp 'cat > /tmp/ogf-proxy.sh && dos2unix /tmp/ogf-proxy.sh'
-
-ssh -t $vmUsername@$vmIp "chmod +x /tmp/post-install.sh && sudo -S /tmp/post-install.sh `$HOME `$USER $vmIp $windowsIp $windowsUsername $windowsPassword"
-
-Restart-VM -Name $vmName -Force
-
-# Waiting for vm to start and replacing Bridge ip by Default Switch ip in hosts file
-# and creating addresses file for UpdateAddresses.ps1
-$running = $true
-while ($running) {
-    $vm = Get-VM -Name $vmName
-    if ($vm.State -eq "Running") {
-        $running = $false
-        break
+function PostSetup {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $vmName
+    )
+    # Create snapshot after setup
+    $snapshot = Get-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
+    if ($null -ne $snapshot) {
+        Remove-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -Confirm:$false
     }
-    Write-Host "Waiting for vm to start..."
-    Start-Sleep -Seconds 1
-}
-
-$running = $true
-while ($running) {
-    $vm = Get-VM -Name $vmName
-    $defaultSwitch = $vm | Get-VMNetworkAdapter | Where-Object { $_.SwitchName -eq "Default Switch" }
-    $defaultSwitchIp = $defaultSwitch.IPAddresses[0]
-    if ($null -ne $defaultSwitchIp) {
-        $running = $false
-        $hostContent = Get-Content $hostsFile
-
-        # Backup hosts file
-        $hostContent | Set-Content $env:USERPROFILE\hosts.bak
-
-        $hostContent = $hostContent -replace $vmIp, $defaultSwitchIp
-        $hostContent | Set-Content $hostsFile
-
-        CreateAddressesFile `
-            -vmName $vmBridge.VMName `
-            -vmIp $defaultSwitchIp `
-            -windowsIp $windowsIp `
-            -addressesFile $addressesFile
-        break
-    }
-    Write-Host "Waiting for ip..."
-    Start-Sleep -Seconds 1
+    Checkpoint-VM -Name $vmName -SnapshotName AfterSetupVm
+    Restart-VM -Name $vmName -Force
 }
 
 
-$snapshot = Get-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -ErrorAction SilentlyContinue
-if ($null -ne $snapshot) {
-    Remove-VMSnapshot -Name 'AfterSetupVm' -VMName $vmName -Confirm:$false
-}
-Checkpoint-VM -Name $vmName -SnapshotName AfterSetupVm
+# Get vm info and credentials
+$vmName, $vmUsername, $vmIp, $vm = VmPrompt
 
-Write-Host "Done !"
+
+# Create snapshot before setup if it doesn't exist
+PreSetup `
+    -vmName $vmName
+
+
+# Get windows ip with bridge network adapter 
+$windowsIp = GetWindowsIp -vm $vm
+
+# Create alias in hosts file 
+CreateAlias `
+    -vmName $vmName `
+    -vmIp $vmIp
+
+# Fix authorized_keys and create ssh key in windows for vm
+FixAuthorizedKeys `
+    -vmUsername $vmUsername `
+    -vmIp $vmIp
+
+# Transfer post-install.sh to vm and execute it
+SetupVm `
+    -vmUsername $vmUsername `
+    -vmIp $vmIp `
+    -windowsIp $windowsIp
+
+# Create snapshot after setup and restart vm
+PostSetup `
+    -vmName $vmName
+
+
+Write-Host "Setup completed"

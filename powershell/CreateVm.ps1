@@ -1,5 +1,12 @@
-$vmDvdPath = "W:\Projets\Digital-Etudes\1.Environnements et outils\Environnements\HyperV VM\ubuntu-20.04.5.iso"
+# Import utils
+. "$PSScriptRoot\utils\Function.ps1"
 
+$debian = "debian-11.6.0-amd64-netinst.iso";
+
+$isoName = $debian;
+$isoPath = $rootDir + "\" + $isoName;
+
+$vmDvdPath = $isoPath;
 
 function Get-Folder {
     [CmdletBinding()]
@@ -121,7 +128,7 @@ function SetVmDvdDrive {
 }
 
 function FetchIsoDrive {
-    $downloadedIso = "$env:USERPROFILE\Downloads\ubuntu-20.04.5.iso"
+    $downloadedIso = "$env:USERPROFILE\Downloads\$isoName"
 
     if ((Test-Path -Path $downloadedIso -PathType Leaf) -ne $true) {
         try {

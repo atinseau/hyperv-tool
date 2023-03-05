@@ -1,9 +1,52 @@
 # Global variables
 $addressesFile = "$env:USERPROFILE\.addresses.json"
+$sshKeyFile = "$env:USERPROFILE\.ssh\id_rsa.pub"
+$hostsFile = "C:\Windows\System32\drivers\etc\hosts"
+$rootDir = $PSScriptRoot.Replace("\powershell\utils", "")
 $bashDirectory = $PSScriptRoot.Replace("\powershell\utils", "\bash")
 $confDirectory = $PSScriptRoot.Replace("\powershell\utils", "\conf")
 
 # Global functions
+function SecureReadHost {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Message
+    )
+    # stop with ctrl+c
+    $securedValue = Read-Host -AsSecureString $Message
+    if ($null -eq $securedValue) {
+        exit
+    }
+    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securedValue)
+    $value = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+    return $value
+}
+
+
+function WhilePrompt {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Prompt,
+        [Parameter(Mandatory = $false)]
+        [string]$errorMessage = "No input provided",
+        [Parameter(Mandatory = $false)]
+        [bool]$Secure = $false
+    )
+    while ($true) {
+        $output = $null
+        if ($Secure) {
+            $output = SecureReadHost -Message $Prompt
+        } else {
+            $output = Read-Host $Prompt
+        }
+        if ([string]::IsNullOrEmpty($output)) {
+            Write-Error $errorMessage
+            continue
+        }
+        return $output
+    }
+}
+
 function GetSwitchHostIp {
     param (
         $Name
@@ -66,27 +109,13 @@ function VmPrompt {
     $vm = $null
 
     if ($AskForVmName) {
-        $vmName = Read-Host "Enter vm name"
-        if ([string]::IsNullOrEmpty($vmName)) {
-            Write-Error "No vm name provided"
-            exit
-        }
+        $vmName = WhilePrompt -Prompt "Enter vm name" -errorMessage "No vm name provided"
     }
-
     if ($AskForVmUsername) {
-        $vmUsername = Read-Host "Enter vm username"
-        if ([string]::IsNullOrEmpty($vmUsername)) {
-            Write-Error "No vm name provided"
-            exit
-        }
+        $vmUsername = WhilePrompt -Prompt "Enter vm username" -errorMessage "No vm username provided"
     }
-
     if ($AskForVmIp) {
-        $vmIp = Read-Host "Enter Vm IP"
-        if ([string]::IsNullOrEmpty($vmIp)) {
-            Write-Error "No ip provided"
-            exit
-        }
+        $vmIp = WhilePrompt -Prompt "Enter Vm IP" -errorMessage "No vm ip provided"
     }
 
     if ([string]::IsNullOrEmpty($vmName) -eq $false) {
@@ -107,20 +136,19 @@ function FixAuthorizedKeys {
         [Parameter(Mandatory = $true)]
         [string] $vmUsername,
         [Parameter(Mandatory = $true)]
-        [string] $vmIp,
-        [Boolean] $Throwable = $true
+        [string] $vmIp
     )
+
+    if ($true -ne (Test-Path $sshKeyFile -PathType leaf)) {
+        ssh-keygen
+    }
 
     # FIX SSH AUTHORIZED KEYS IN VM
     $authorizedKeys = (ssh $vmUsername@$vmIp "cat .ssh/authorized_keys 2> /dev/null")
-
-    if ($Throwable -eq $true -and $LASTEXITCODE -ne 0) {
-        Throw "Error while getting authorized_keys file, please check if ssh is working !"
-    }
     
-    if ([string]::IsNullOrEmpty($authorizedKeys) -or (Get-Content $env:USERPROFILE\.ssh\id_rsa.pub | Select-String -Pattern "$authorizedKeys" -SimpleMatch -Quiet) -ne $true) {
+    if ([string]::IsNullOrEmpty($authorizedKeys) -or (Get-Content $sshKeyFile | Select-String -Pattern "$authorizedKeys" -SimpleMatch -Quiet) -ne $true) {
         Write-Host "Recreating authorized_keys file with windows ssh key !"
-        Get-Content $env:USERPROFILE\.ssh\id_rsa.pub | ssh $vmUsername@$vmIp "cat >> .ssh/authorized_keys"
+        Get-Content $sshKeyFile | ssh $vmUsername@$vmIp "cat > authorized_keys && mkdir -p ~/.ssh && mv authorized_keys ~/.ssh/"
     }
 }
 
@@ -142,17 +170,8 @@ function PromptForAddressesFile {
     Write-Host "#########################################################"
     $createFile = Read-Host "Do you want to create it now ? (y/n)"
     if ($createFile -eq "y") {
-        $vmIp = Read-Host "Enter old vm ip"
-        if ([string]::IsNullOrEmpty($vmIp)) {
-            Write-Error "Vm ip cannot be empty !"
-            exit
-        }
-
-        $windowsIp = Read-Host "Enter old windows ip"
-        if ([string]::IsNullOrEmpty($windowsIp)) {
-            Write-Error "Windows ip cannot be empty !"
-            exit
-        }
+        $vmIp = WhilePrompt -Prompt "Enter old vm ip" -errorMessage "Vm ip cannot be empty !"
+        $windowsIp = WhilePrompt -Prompt "Enter old windows ip" -errorMessage "Windows ip cannot be empty !"
 
         CreateAddressesFile `
             -vmName $vmName `
