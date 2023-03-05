@@ -7,7 +7,7 @@ param (
 )
 
 # Import utils
-. "$PSScriptRoot\utils\Function.ps1"
+. "$PSScriptRoot\utils\Global.ps1"
 
 # Global variables
 $updatesDirectory = $bashDirectory + "\updates"

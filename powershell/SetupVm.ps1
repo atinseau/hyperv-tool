@@ -1,5 +1,5 @@
 # Import utils
-. "$PSScriptRoot\utils\Function.ps1" 
+. "$PSScriptRoot\utils\Global.ps1" 
 
 
 function PreSetup {

@@ -1,5 +1,5 @@
 # Import utils
-. "$PSScriptRoot\utils\Function.ps1"
+. "$PSScriptRoot\utils\Global.ps1"
 
 $isoUrl = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-11.6.0-amd64-netinst.iso";
 $isoName = "debian-11.6.0-amd64-netinst.iso";

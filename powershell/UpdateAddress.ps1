@@ -1,5 +1,5 @@
 # Import utils
-. "$PSScriptRoot\utils\Function.ps1" 
+. "$PSScriptRoot\utils\Global.ps1" 
 
 $sshConfigFile = "$env:USERPROFILE\.ssh\config"
 $replaceIpScript = $bashDirectory + "\replace-ip.sh"
