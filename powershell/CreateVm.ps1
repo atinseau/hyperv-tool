@@ -1,12 +1,8 @@
 # Import utils
 . "$PSScriptRoot\utils\Function.ps1"
 
-$debian = "debian-11.6.0-amd64-netinst.iso";
-
-$isoName = $debian;
-$isoPath = $rootDir + "\" + $isoName;
-
-$vmDvdPath = $isoPath;
+$isoUrl = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-11.6.0-amd64-netinst.iso";
+$isoName = "debian-11.6.0-amd64-netinst.iso";
 
 function Get-Folder {
     [CmdletBinding()]
@@ -133,10 +129,11 @@ function FetchIsoDrive {
     if ((Test-Path -Path $downloadedIso -PathType Leaf) -ne $true) {
         try {
             Write-Host "[SETUP] Downloading ISO file..."
-            Copy-Item -Path $vmDvdPath -Destination $downloadedIso
+            (New-Object System.Net.WebClient).DownloadFile($isoUrl, $downloadedIso)
             Write-Host "[SETUP] ISO file downloaded to $downloadedIso"
         }
         catch {
+            Write-Error $_
             Throw "[ERROR] Failed to download ISO file"
         }
     }

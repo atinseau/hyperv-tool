@@ -2,7 +2,6 @@
 $addressesFile = "$env:USERPROFILE\.addresses.json"
 $sshKeyFile = "$env:USERPROFILE\.ssh\id_rsa.pub"
 $hostsFile = "C:\Windows\System32\drivers\etc\hosts"
-$rootDir = $PSScriptRoot.Replace("\powershell\utils", "")
 $bashDirectory = $PSScriptRoot.Replace("\powershell\utils", "\bash")
 $confDirectory = $PSScriptRoot.Replace("\powershell\utils", "\conf")
 
