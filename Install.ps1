@@ -1,5 +1,3 @@
-. "$PSScriptRoot\powershell\utils\Global.ps1"
-
 function AddPath($Path) {
   $oldPath = [Environment]::GetEnvironmentVariable("PATH")
   if ($oldPath -like "*$Path*") {
