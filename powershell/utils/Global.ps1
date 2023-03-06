@@ -5,9 +5,9 @@
 git fetch
 $diff = git diff master...origin/master
 if ($diff) {
-    git pull
-    $PSScriptRoot
-
-    # Run the script
+    git pull 
+    Write-Host "[Script reloaded]" -ForegroundColor Green
+    $currentScript = $MyInvocation.ScriptName
+    . "$currentScript"
     exit
 }
