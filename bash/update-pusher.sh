@@ -5,7 +5,7 @@ SSH_USER=$2
 VM_IP=$3
 HOST_IP=$4
 
-if ! apt-get list --installed 2> /dev/null | grep jq > /dev/null; then
+if ! apt list --installed 2> /dev/null | grep jq > /dev/null; then
   echo "Installing jq..."
   apt-get install -y jq > /dev/null
 fi
