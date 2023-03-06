@@ -4,6 +4,7 @@
 
 # Auto reload script if it has been updated
 function CheckUpdate () {
+    Get-Location
     Set-Location $gitDirectory
     git fetch 
     $diff = git diff master...origin/master
