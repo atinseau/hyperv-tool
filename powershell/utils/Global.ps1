@@ -7,5 +7,7 @@ $diff = git diff master...origin/master
 if ($diff) {
     git pull
     $PSScriptRoot
+
+    # Run the script
     exit
 }
