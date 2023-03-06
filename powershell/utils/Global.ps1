@@ -2,6 +2,9 @@
 . "$PSScriptRoot\Variables.ps1"
 . "$PSScriptRoot\Functions.ps1"
 
+$MyInvocation
+
+# Auto reload script if it has been updated
 git fetch
 $diff = git diff master...origin/master
 if ($diff) {
