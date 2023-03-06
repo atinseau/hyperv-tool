@@ -10,7 +10,6 @@ function CheckUpdate () {
     if ($diff) {
         git pull
     }
-    $currentPath
     Set-Location $currentPath
     if ($diff) {
         Write-Host "[Script reloaded]" -ForegroundColor Green
