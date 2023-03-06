@@ -7,6 +7,7 @@ function AddPath($Path) {
   $Path = $oldPath + [IO.Path]::PathSeparator + $Path
   [Environment]::SetEnvironmentVariable("PATH", $Path, "User")
   $Env:Path = $Path
+  Write-Host "Adding to path: $Path"
 }
 
 function AutoInstall() {
