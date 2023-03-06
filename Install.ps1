@@ -10,7 +10,7 @@ function AddPath($Path) {
 }
 
 function AutoInstall() {
-  git clone "git@github.com:atinseau/hyperv-tool.git"
+  git clone "https://github.com/atinseau/hyperv-tool.git"
   $currentPath = (Get-Location).Path
   AddPath -Path "$currentPath\powershell"
 }
