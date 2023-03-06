@@ -2,7 +2,6 @@
 . "$PSScriptRoot\Variables.ps1"
 . "$PSScriptRoot\Functions.ps1"
 
-# Auto reload script if it has been updated
 function CheckUpdate () {
     $currentPath = (Get-Location).Path
     Set-Location $gitDirectory
@@ -21,5 +20,5 @@ function CheckUpdate () {
     }
 }
 
-
+# Auto reload script if it has been updated
 CheckUpdate
