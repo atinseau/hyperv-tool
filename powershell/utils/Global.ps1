@@ -4,7 +4,7 @@
 
 # Auto reload script if it has been updated
 function CheckUpdate () {
-    $currentPath = Get-Location
+    $currentPath = Get-Location -PSProvider FileSystem
     $nextPath = $gitDirectory
 
     $currentPath
