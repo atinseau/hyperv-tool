@@ -9,14 +9,16 @@ function CheckUpdate () {
     git fetch 
     $diff = git diff master...origin/master
     if ($diff) {
-        git pull 
+        git pull
+    }
+    $currentPath
+    Set-Location $currentPath
+    if ($diff) {
         Write-Host "[Script reloaded]" -ForegroundColor Green
         $currentScript = $MyInvocation.ScriptName
-        Set-Location $currentPath
         . "$currentScript"
         exit
     }
-    Set-Location $currentPath
 }
 
 
