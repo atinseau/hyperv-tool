@@ -11,3 +11,6 @@ function AddPath($Path) {
 AddPath -Path "$PSScriptRoot\powershell"
 
 Write-Host "Done! You can now run hyper v commands from any directory."
+
+
+# (Invoke-WebRequest -Uri https://raw.githubusercontent.com/atinseau/hyperv-tool/master/Install.ps1) | Invoke-Expression
