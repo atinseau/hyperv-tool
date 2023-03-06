@@ -11,5 +11,3 @@ if ($diff) {
     git pull
     Write-Output "Local repository updated"
 }
-
-Write-Output "Global variables and functions loaded"
