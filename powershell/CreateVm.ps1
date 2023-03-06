@@ -129,7 +129,7 @@ function FetchIsoDrive {
     if ((Test-Path -Path $downloadedIso -PathType Leaf) -ne $true) {
         try {
             Write-Host "[SETUP] Downloading ISO file..."
-            . "$PSScriptRoot\tools\wget.exe" -O $downloadedIso $isoUrl -q
+            . "$toolDirectory\wget.exe" -O $downloadedIso $isoUrl -q
             Write-Host "[SETUP] ISO file downloaded to $downloadedIso"
         }
         catch {
