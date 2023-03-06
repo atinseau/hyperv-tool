@@ -4,11 +4,7 @@
 
 # Auto reload script if it has been updated
 function CheckUpdate () {
-
     $currentPath = (Get-Location).Path
-
-    $currentPath
-
     Set-Location $gitDirectory
     git fetch 
     $diff = git diff master...origin/master
@@ -16,9 +12,11 @@ function CheckUpdate () {
         git pull 
         Write-Host "[Script reloaded]" -ForegroundColor Green
         $currentScript = $MyInvocation.ScriptName
+        Set-Location $currentPath
         . "$currentScript"
         exit
     }
+    Set-Location $currentPath
 }
 
 
