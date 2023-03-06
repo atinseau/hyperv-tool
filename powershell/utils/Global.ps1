@@ -6,5 +6,6 @@ git fetch
 $diff = git diff master...origin/master
 if ($diff) {
     git pull
+    $PSScriptRoot
     exit
 }
