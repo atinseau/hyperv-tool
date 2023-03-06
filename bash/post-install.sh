@@ -74,7 +74,7 @@ password=$WINDOWS_PASSWORD
 domain=groupe.lan
 EOF
   chown $SSH_USER:$SSH_USER $USER_HOME/.cifscredentials
-  echo "//$WINDOWS_IP/share $USER_HOME/share cifs credentials=$USER_HOME/.cifscredentials,uid=1000,gid=1000,vers=1.0,iocharset=utf8 0 0" | tee -a /etc/fstab
+  echo "//$WINDOWS_IP/share $USER_HOME/share cifs credentials=$USER_HOME/.cifscredentials,uid=1000,gid=1000,vers=3.0,iocharset=utf8 0 0" | tee -a /etc/fstab
 }
 
 install_core
