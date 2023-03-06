@@ -2,7 +2,7 @@
 . "$PSScriptRoot\Variables.ps1"
 . "$PSScriptRoot\Functions.ps1"
 
-$MyInvocation
+$gitDirectory
 
 # Auto reload script if it has been updated
 git fetch
