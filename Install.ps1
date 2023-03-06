@@ -1,11 +1,12 @@
 function AddPath($Path) {
-  $oldPath = [Environment]::GetEnvironmentVariable("PATH")
+  $oldPath = [Environment]::GetEnvironmentVariable("PATH", "User")
   if ($oldPath -like "*$Path*") {
     Write-Host "Path already exists: $Path"
     return
   }
   $Path = $oldPath + [IO.Path]::PathSeparator + $Path
-  setx PATH $Path
+  [Environment]::SetEnvironmentVariable("PATH", $Path, "User")
+  $Env:Path = $Path
 }
 
 $currentPath = (Get-Location).Path
